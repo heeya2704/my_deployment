@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Machine Learning — Complete Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Caveat:wght@600;700&family=Courier+Prime&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6EFDD;
+    --paper-line:#C9D6E3;
+    --margin-red:#C1443D;
+    --ink-sup:#1E3A5F;
+    --ink-uns:#2F5F3A;
+    --ink-semi:#5B3A6E;
+    --ink-rl:#A6461E;
+    --ink-teal:#1F6F78;
+    --ink-mustard:#8A6D1D;
+    --hi-yellow:#FFE770;
+    --hi-green:#C8F0C0;
+    --hi-pink:#FFD1DE;
+    --hi-orange:#FFD9B0;
+    --hi-blue:#CFE3FA;
+    --paper-shadow:rgba(30,20,10,0.18);
+  }
+  *{box-sizing:border-box;}
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:
+      repeating-linear-gradient(var(--paper) 0px, var(--paper) 31px, var(--paper-line) 32px),
+      var(--paper);
+    font-family:'Kalam', cursive;
+    color:#26313d;
+    padding: 28px 20px 90px 70px;
+    position:relative;
+    min-height:100vh;
+  }
+  body::before{
+    content:""; position:fixed; top:0; bottom:0; left:56px; width:2px;
+    background:var(--margin-red); opacity:0.55; z-index:0;
+  }
+  .spiral{ position:fixed; top:0; bottom:0; left:14px; width:22px; z-index:1; pointer-events:none; }
+  .spiral span{
+    display:block; width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #fffdf7, #cfc4a8 70%, #a99d80 100%);
+    box-shadow: inset 0 0 0 2px #8d8264, 2px 3px 4px rgba(0,0,0,0.25);
+    margin:26px 0;
+  }
+  .wrap{ position:relative; z-index:2; max-width:1000px; margin:0 auto; }
+
+  h1.title{
+    font-family:'Caveat', cursive; font-weight:700;
+    font-size:clamp(40px, 7vw, 64px); margin:6px 0 0 0;
+    color:var(--ink-sup); transform: rotate(-1deg);
+  }
+  .subtitle{ font-size:19px; margin:0 0 18px 4px; color:#5a4a2e; font-style:italic; }
+  .squiggle{ width:220px; height:14px; margin:-6px 0 20px 6px; }
+
+  /* jump nav */
+  .nav-strip{
+    position:sticky; top:0; z-index:20;
+    display:flex; flex-wrap:wrap; gap:8px;
+    background:rgba(246,239,221,0.92);
+    backdrop-filter:blur(2px);
+    padding:10px 4px 14px 0;
+    margin-bottom:20px;
+    border-bottom:2px dashed #26313d55;
+  }
+  .nav-strip a{
+    text-decoration:none; font-size:13px; font-weight:700; color:#26313d;
+    background:#fffdf6; border:1.5px solid #26313d; border-radius:12px;
+    padding:4px 10px; white-space:nowrap;
+  }
+  .nav-strip a:hover{ background:var(--hi-yellow); }
+
+  .mnemo-strip{ display:flex; flex-wrap:wrap; gap:14px; margin: 0 0 10px 0; }
+  .mnemo-chip{
+    background:var(--hi-yellow); border:2px solid #26313d;
+    border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+    padding:8px 16px; font-size:17px; font-weight:700;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.12); transform: rotate(-1.5deg);
+  }
+  .mnemo-chip:nth-child(2){ background:var(--hi-green); transform: rotate(1deg); }
+  .mnemo-chip:nth-child(3){ background:var(--hi-pink); transform: rotate(-1deg); }
+  .mnemo-chip:nth-child(4){ background:var(--hi-orange); transform: rotate(1.5deg); }
+
+  .section-label{
+    font-family:'Caveat', cursive; font-size:28px; font-weight:700;
+    margin: 50px 0 14px 2px; color:#26313d; scroll-margin-top:70px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-label .num-badge{
+    font-family:'Kalam',cursive; font-size:15px; font-weight:700; color:#fffdf6;
+    background:#26313d; border-radius:50%; width:26px; height:26px;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+
+  /* flip card grid (types of ML) */
+  .grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:22px; }
+  @media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
+  .card{ perspective: 1400px; height: 300px; cursor:pointer; }
+  .card-inner{ position:relative; width:100%; height:100%; transition: transform 0.6s cubic-bezier(.2,.8,.2,1); transform-style: preserve-3d; }
+  .card.flipped .card-inner{ transform: rotateY(180deg); }
+  .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius: 255px 15px 225px 15px/15px 225px 15px 255px; padding:20px 22px; box-shadow: 4px 6px 10px var(--paper-shadow); display:flex; flex-direction:column; }
+  .front{ background:#fffdf6; border:2.5px solid; }
+  .back{ transform: rotateY(180deg); border:2.5px dashed; }
+  .card.sup .front, .card.sup .back{ border-color:var(--ink-sup); color:var(--ink-sup); }
+  .card.uns .front, .card.uns .back{ border-color:var(--ink-uns); color:var(--ink-uns); }
+  .card.semi .front, .card.semi .back{ border-color:var(--ink-semi); color:var(--ink-semi); }
+  .card.rl .front, .card.rl .back{ border-color:var(--ink-rl); color:var(--ink-rl); }
+  .card.sup .back{ background:#eef3fb; } .card.uns .back{ background:#eef8ee; }
+  .card.semi .back{ background:#f4eef8; } .card.rl .back{ background:#fbf0e8; }
+  .icon{ width:52px; height:52px; margin-bottom:6px; }
+  .card-title{ font-family:'Caveat', cursive; font-size:30px; font-weight:700; margin:0; }
+  .card-tag{ font-size:14px; opacity:0.75; margin:0 0 6px 0; }
+  .card-def{ font-size:18px; line-height:1.3; margin:0; }
+  .flip-hint{ margin-top:auto; font-size:13px; opacity:0.6; text-align:right; }
+  .back ul{ margin:4px 0 0 0; padding-left:18px; font-size:15px; line-height:1.45; }
+  .back .mini-label{ font-weight:700; text-decoration: underline wavy; }
+
+  /* tables */
+  .table-wrap{ overflow-x:auto; margin-top:10px; }
+  table{ border-collapse:collapse; width:100%; min-width:600px; font-size:16px; background:#fffdf6; }
+  th, td{ border:2px solid #26313d; padding:10px 12px; text-align:left; border-radius: 40px 6px 40px 6px/6px 40px 6px 40px; }
+  th{ font-family:'Caveat', cursive; font-size:22px; background:var(--hi-yellow); }
+  tr:nth-child(2) td{ background:var(--hi-green); }
+  tr:nth-child(3) td{ background:var(--hi-pink); }
+  tr:nth-child(4) td{ background:var(--hi-orange); }
+  tr:nth-child(5) td{ background:var(--hi-blue); }
+
+  /* sticky note */
+  .sticky{
+    background:var(--hi-yellow); border:2px solid #26313d33; padding:18px 20px;
+    max-width:640px; margin: 22px 0; box-shadow: 5px 6px 0 rgba(0,0,0,0.12);
+    transform: rotate(-1.2deg); position:relative; font-size:18px;
+  }
+  .sticky::before{
+    content:""; position:absolute; top:-14px; left:40px; width:70px; height:22px;
+    background:rgba(255,255,255,0.55); border:1px solid rgba(0,0,0,0.08); transform:rotate(-4deg);
+  }
+  .sticky b{ display:block; font-family:'Caveat', cursive; font-size:24px; margin-bottom:6px; }
+
+  .analogy-grid{ display:grid; grid-template-columns: repeat(2,1fr); gap:16px; margin-top:10px; }
+  @media (max-width:720px){ .analogy-grid{ grid-template-columns:1fr; } }
+  .analogy{ border-left:4px solid #26313d; padding:6px 14px; font-size:16px; background:rgba(255,255,255,0.4); }
+  .analogy b{ font-family:'Caveat', cursive; font-size:19px; }
+
+  .flow-row{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; padding:10px 12px; margin-bottom:10px; background:rgba(255,255,255,0.45); border-left:5px solid; font-size:15px; }
+  .flow-row b.flow-name{ font-family:'Caveat', cursive; font-size:20px; margin-right:8px; min-width:150px; display:inline-block; }
+  .flow-chip{ background:#fffdf6; border:1.5px solid currentColor; border-radius:14px; padding:3px 10px; white-space:nowrap; }
+  .flow-arrow{ font-weight:700; opacity:0.6; }
+  .flow-row.f-sup{ border-color:var(--ink-sup); color:var(--ink-sup); }
+  .flow-row.f-uns{ border-color:var(--ink-uns); color:var(--ink-uns); }
+  .flow-row.f-semi{ border-color:var(--ink-semi); color:var(--ink-semi); }
+  .flow-row.f-rl{ border-color:var(--ink-rl); color:var(--ink-rl); }
+  .flow-row.f-teal{ border-color:var(--ink-teal); color:var(--ink-teal); }
+  .flow-row.f-mustard{ border-color:var(--ink-mustard); color:var(--ink-mustard); }
+
+  .vs-grid{ display:flex; flex-direction:column; gap:14px; margin-top:10px; }
+  .vs-box{ background:#fffdf6; border:2px dashed #26313d; border-radius: 18px 4px 18px 4px; padding:14px 18px; font-size:17px; }
+  .vs-box .vs-title{ font-family:'Caveat', cursive; font-size:22px; font-weight:700; display:block; margin-bottom:4px; }
+  .vs-box .vs-title .vs-a{ color:var(--ink-sup); }
+  .vs-box .vs-title .vs-b{ color:var(--ink-uns); }
+
+  .oneline-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:10px; }
+  @media (max-width:720px){ .oneline-grid{ grid-template-columns:1fr; } }
+  .oneline{ padding:12px 16px; font-size:16px; border-radius:12px; background:#fffdf6; border:2px solid currentColor; }
+  .oneline b{ font-family:'Caveat',cursive; font-size:21px; display:block; }
+  .oneline.o-sup{ color:var(--ink-sup); } .oneline.o-uns{ color:var(--ink-uns); }
+  .oneline.o-semi{ color:var(--ink-semi); } .oneline.o-rl{ color:var(--ink-rl); }
+  .oneline.o-teal{ color:var(--ink-teal); } .oneline.o-mustard{ color:var(--ink-mustard); }
+
+  .tree-wrap{ background:#fffdf6; border:2px solid #26313d; border-radius:18px; padding:14px; overflow-x:auto; margin-top:10px; }
+  .tree-wrap svg{ display:block; min-width:760px; margin:0 auto; }
+
+  /* timeline (life cycle) */
+  .timeline{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+  .step-item{
+    display:flex; gap:14px; align-items:flex-start;
+    background:#fffdf6; border:2px solid #26313d; border-radius:14px;
+    padding:10px 16px;
+  }
+  .step-item .step-num{
+    font-family:'Caveat', cursive; font-weight:700; font-size:26px;
+    color:#fffdf6; background:var(--ink-teal); border-radius:50%;
+    width:38px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  }
+  .step-item.deploy-zone .step-num{ background:var(--ink-rl); }
+  .step-item .step-text{ font-size:16px; line-height:1.4; }
+  .step-item .step-text b{ font-family:'Caveat',cursive; font-size:21px; }
+  .zone-divider{
+    text-align:center; font-size:14px; font-style:italic; opacity:0.65;
+    margin:6px 0; border-top:2px dashed var(--margin-red); padding-top:6px;
+  }
+
+  /* 3-col grid for data types etc */
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:10px; }
+  @media (max-width:840px){ .grid3{ grid-template-columns:1fr; } }
+  .mini-card{
+    background:#fffdf6; border:2px solid currentColor; border-radius:16px;
+    padding:14px 16px; font-size:15px; line-height:1.4;
+  }
+  .mini-card b{ font-family:'Caveat',cursive; font-size:22px; display:block; margin-bottom:4px; }
+
+  /* formula & code boxes */
+  .formula-box{
+    background:#fffdf6; border:3px solid #26313d; border-radius:16px;
+    padding:18px 26px; display:inline-block; margin:12px 0;
+    font-family:'Caveat', cursive; font-size:34px; font-weight:700;
+    box-shadow: 4px 5px 0 rgba(0,0,0,0.1);
+  }
+  .code-box{
+    background:#2b2b26; color:#f3ecd6; border-radius:12px;
+    padding:14px 18px; font-family:'Courier Prime', monospace; font-size:14px;
+    overflow-x:auto; margin:12px 0; line-height:1.5;
+  }
+  .code-box .cmt{ color:#9aa87c; }
+
+  .footer-note{ text-align:center; margin-top:70px; font-size:15px; opacity:0.55; font-style:italic; }
+</style>
+</head>
+<body>
+
+<div class="spiral" id="spiral"></div>
+
+<div class="wrap">
+  <h1 class="title">Machine Learning</h1>
+  <div class="subtitle">— the complete notebook, everything from your rough notes —</div>
+  <svg class="squiggle" viewBox="0 0 220 14"><path d="M2 8 Q 20 2, 40 8 T 80 8 T 120 8 T 160 8 T 200 8" stroke="var(--margin-red)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="nav-strip">
+    <a href="#s1">1. What is ML</a>
+    <a href="#s2">2. Types of ML</a>
+    <a href="#s3">3. Life Cycle</a>
+    <a href="#s4">4. Dataset</a>
+    <a href="#s5">5. Data Types</a>
+    <a href="#s6">6. Preprocessing</a>
+    <a href="#s7">7. Encoding</a>
+    <a href="#s8">8. Scaling</a>
+    <a href="#s9">9. Key Terms</a>
+    <a href="#s10">10. Regression vs Class.</a>
+    <a href="#s11">11. Cost Fn / MSE</a>
+    <a href="#s12">12. train_test_split</a>
+    <a href="#s13">Recap</a>
+  </div>
+
+  <!-- ================= 1. WHAT IS ML ================= -->
+  <div class="section-label" id="s1"><span class="num-badge">1</span>What is Machine Learning?</div>
+
+  <div class="flow-row f-mustard">
+    <b class="flow-name">Old way</b>
+    <span class="flow-chip">Data</span><span class="flow-arrow">+</span>
+    <span class="flow-chip">Rules (Program)</span><span class="flow-arrow">→</span>
+    <span class="flow-chip">Output</span>
+  </div>
+  <div class="flow-row f-teal">
+    <b class="flow-name">ML way</b>
+    <span class="flow-chip">Data</span><span class="flow-arrow">+</span>
+    <span class="flow-chip">Output (answers)</span><span class="flow-arrow">→</span>
+    <span class="flow-chip">Machine learns the Rules</span>
+  </div>
+
+  <div class="sticky">
+    <b>In one line</b>
+    Instead of a human writing every rule, we give the machine data + answers. It understands the pattern, learns the relationship, and builds its own rule-set (a trained model) — which it then uses to predict answers for new data.
+  </div>
+
+  <!-- ================= 2. TYPES OF ML ================= -->
+  <div class="section-label" id="s2"><span class="num-badge">2</span>All 4 Types of Machine Learning</div>
+
+  <div class="mnemo-strip">
+    <div class="mnemo-chip">Supervised → Teacher gives Q + A</div>
+    <div class="mnemo-chip">Unsupervised → No teacher, find it yourself</div>
+    <div class="mnemo-chip">Semi-Supervised → Little teacher + tons of data</div>
+    <div class="mnemo-chip">Reinforcement → Learn from reward + penalty</div>
+  </div>
+
+  <div class="grid">
+    <div class="card sup" onclick="this.classList.toggle('flipped')">
+      <div class="card-inner">
+        <div class="face front">
+          <svg class="icon" viewBox="0 0 64 64" fill="none" stroke="var(--ink-sup)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 24 L32 12 L58 24 L32 36 Z"/><path d="M18 29 V44 Q32 52 46 44 V29"/><path d="M58 24 V38"/>
+          </svg>
+          <p class="card-title">1. Supervised</p>
+          <p class="card-tag">Input + Output given</p>
+          <p class="card-def">Model learns from questions <b>AND</b> answers, then predicts on new input.</p>
+          <div class="flip-hint">flip →</div>
+        </div>
+        <div class="face back">
+          <p class="card-title" style="font-size:23px;">Supervised — details</p>
+          <ul>
+            <li><span class="mini-label">Regression:</span> predicts a number (price, salary, temp)</li>
+            <li><span class="mini-label">Classification:</span> predicts a category (spam / not spam)</li>
+            <li><span class="mini-label">Example:</span> Area + Bedrooms → House Price</li>
+            <li><span class="mini-label">Algorithms:</span> Linear/Logistic Regression, Decision Tree, KNN, SVM</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card uns" onclick="this.classList.toggle('flipped')">
+      <div class="card-inner">
+        <div class="face front">
+          <svg class="icon" viewBox="0 0 64 64" fill="none" stroke="var(--ink-uns)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="26" cy="26" r="14"/><path d="M36 36 L52 52"/>
+            <circle cx="20" cy="22" r="2.5" fill="var(--ink-uns)"/><circle cx="30" cy="20" r="2.5" fill="var(--ink-uns)"/><circle cx="24" cy="32" r="2.5" fill="var(--ink-uns)"/>
+          </svg>
+          <p class="card-title">2. Unsupervised</p>
+          <p class="card-tag">Input only, no answer</p>
+          <p class="card-def">No target column — model finds hidden groups or patterns by itself.</p>
+          <div class="flip-hint">flip →</div>
+        </div>
+        <div class="face back">
+          <p class="card-title" style="font-size:23px;">Unsupervised — details</p>
+          <ul>
+            <li><span class="mini-label">Clustering:</span> groups similar data (customer segments)</li>
+            <li><span class="mini-label">Dimensionality Reduction:</span> fewer features, same info (PCA)</li>
+            <li><span class="mini-label">Algorithms:</span> K-Means, Hierarchical, DBSCAN, PCA</li>
+            <li><span class="mini-label">Uses:</span> visualization, faster training</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card semi" onclick="this.classList.toggle('flipped')">
+      <div class="card-inner">
+        <div class="face front">
+          <svg class="icon" viewBox="0 0 64 64" fill="none" stroke="var(--ink-semi)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="32" cy="32" r="22"/><path d="M32 10 A22 22 0 0 1 32 54 Z" fill="var(--hi-pink)" stroke="var(--ink-semi)"/>
+            <circle cx="24" cy="24" r="2" fill="var(--ink-semi)"/><circle cx="24" cy="40" r="2" fill="var(--ink-semi)"/>
+          </svg>
+          <p class="card-title">3. Semi-Supervised</p>
+          <p class="card-tag">Some labeled + lots unlabeled</p>
+          <p class="card-def">Supervised + unsupervised combo — a little help, a lot of self-learning.</p>
+          <div class="flip-hint">flip →</div>
+        </div>
+        <div class="face back">
+          <p class="card-title" style="font-size:23px;">Semi-Supervised — details</p>
+          <ul>
+            <li><span class="mini-label">Example:</span> 1,000 labeled + 9,000 unlabeled images</li>
+            <li><span class="mini-label">Why:</span> labeling everything is expensive & slow</li>
+            <li><span class="mini-label">Uses:</span> image classification, speech recognition, medical imaging</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card rl" onclick="this.classList.toggle('flipped')">
+      <div class="card-inner">
+        <div class="face front">
+          <svg class="icon" viewBox="0 0 64 64" fill="none" stroke="var(--ink-rl)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="14" y="30" width="36" height="18" rx="4"/><circle cx="24" cy="48" r="4" fill="var(--ink-rl)"/><circle cx="40" cy="48" r="4" fill="var(--ink-rl)"/>
+            <path d="M32 30 V16" /><circle cx="32" cy="12" r="4"/><path d="M46 20 A10 10 0 0 1 50 30" stroke-dasharray="3 3"/>
+          </svg>
+          <p class="card-title">4. Reinforcement</p>
+          <p class="card-tag">Actions → Rewards / Penalties</p>
+          <p class="card-def">Agent tries actions in an environment, learns from trial &amp; error.</p>
+          <div class="flip-hint">flip →</div>
+        </div>
+        <div class="face back">
+          <p class="card-title" style="font-size:23px;">Reinforcement — details</p>
+          <ul>
+            <li><span class="mini-label">Agent:</span> the learner (robot, game AI, self-driving car)</li>
+            <li><span class="mini-label">Environment:</span> the world it acts in</li>
+            <li><span class="mini-label">State:</span> current situation of the environment</li>
+            <li><span class="mini-label">Example:</span> Tesla self-driving, game AI, robots</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sticky">
+    <b>Easy way to remember</b>
+    Supervised = Teacher gives Q + A · Unsupervised = No teacher, find patterns yourself · Semi-Supervised = Little teacher + lots of data · Reinforcement = Learn from Rewards + Penalties
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Type</th><th>Data Given</th><th>Main Goal</th><th>Example</th></tr>
+      <tr><td><b>Supervised</b></td><td>Input + Output</td><td>Predict answer</td><td>House price</td></tr>
+      <tr><td><b>Unsupervised</b></td><td>Input only</td><td>Find patterns / groups</td><td>Customer groups</td></tr>
+      <tr><td><b>Semi-Supervised</b></td><td>Some labeled + lots unlabeled</td><td>Learn with limited labels</td><td>Image classification</td></tr>
+      <tr><td><b>Reinforcement</b></td><td>Actions + rewards/penalties</td><td>Learn best actions</td><td>Game / robot</td></tr>
+    </table>
+  </div>
+
+  <div class="vs-grid">
+    <div class="vs-box"><span class="vs-title"><span class="vs-a">Supervised</span> vs <span class="vs-b">Unsupervised</span></span>Supervised has a target and predicts it; unsupervised has no target and just finds patterns.</div>
+    <div class="vs-box"><span class="vs-title"><span class="vs-a">Supervised</span> vs <span style="color:var(--ink-rl);">Reinforcement</span></span>Supervised has correct answers already in the training data; reinforcement learns from rewards/penalties instead.</div>
+    <div class="vs-box"><span class="vs-title"><span class="vs-b">Unsupervised</span> vs <span style="color:var(--ink-semi);">Semi-Supervised</span></span>Unsupervised uses no labeled data; semi-supervised uses a small amount of labeled data plus lots of unlabeled data.</div>
+  </div>
+
+  <!-- ================= 3. LIFE CYCLE ================= -->
+  <div class="section-label" id="s3"><span class="num-badge">3</span>ML Life Cycle (12 steps)</div>
+  <p style="font-size:16px; margin:-4px 0 6px 2px;">Example project used throughout: <b>"AI to predict stock market prices"</b></p>
+
+  <div class="timeline">
+    <div class="step-item"><div class="step-num">1</div><div class="step-text"><b>Problem Statement</b> — define exactly what you're solving.</div></div>
+    <div class="step-item"><div class="step-num">2</div><div class="step-text"><b>Data Collection</b> — gather data from Kaggle, APIs, or web scraping.</div></div>
+    <div class="step-item"><div class="step-num">3</div><div class="step-text"><b>Data Preprocessing</b> — remove duplicates, handle nulls, clean bad values.</div></div>
+    <div class="step-item"><div class="step-num">4</div><div class="step-text"><b>Feature Engineering</b> — add/fix columns, e.g. splitting a date column.</div></div>
+    <div class="step-item"><div class="step-num">5</div><div class="step-text"><b>Train-Test Split</b> — usually 80% train / 20% test.</div></div>
+    <div class="step-item"><div class="step-num">6</div><div class="step-text"><b>Model Selection</b> — pick an algorithm (Linear Regression, Decision Tree, etc.)</div></div>
+    <div class="step-item"><div class="step-num">7</div><div class="step-text"><b>Model Training</b> — feed the 80% data so the model can learn.</div></div>
+    <div class="step-item"><div class="step-num">8</div><div class="step-text"><b>Model Evaluation</b> — check accuracy on the unseen 20% test data.</div></div>
+    <div class="step-item"><div class="step-num">9</div><div class="step-text"><b>Hyperparameter Tuning</b> — try different settings to improve performance.</div></div>
+    <div class="zone-divider">↑ happens on your local machine &nbsp;&nbsp;|&nbsp;&nbsp; ↓ moves to a live server</div>
+    <div class="step-item deploy-zone"><div class="step-num">10</div><div class="step-text"><b>Deployment</b> — go live via API, CI/CD, cloud hosting (AWS, Render).</div></div>
+    <div class="step-item deploy-zone"><div class="step-num">11</div><div class="step-text"><b>Monitoring</b> — keep watching the model + live data after launch.</div></div>
+    <div class="step-item deploy-zone"><div class="step-num">12</div><div class="step-text"><b>Retraining</b> — update with new data periodically so it stays accurate.</div></div>
+  </div>
+
+  <!-- ================= 4. DATASET ================= -->
+  <div class="section-label" id="s4"><span class="num-badge">4</span>Dataset Basics</div>
+  <div class="formula-box">ML = Data + Algorithm</div>
+
+  <p style="font-size:16px;">Every dataset splits into <b>Features</b> (input / the "questions") and <b>Target</b> (output / the "answer" to predict).</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Name</th><th>Marks</th><th>Attendance</th><th>Result</th></tr>
+      <tr><td>Rahul</td><td>85</td><td>90%</td><td>Pass</td></tr>
+    </table>
+  </div>
+  <p style="font-size:15px; opacity:0.8;">Name / Marks / Attendance = <b>features</b> &nbsp;|&nbsp; Result = <b>target</b></p>
+
+  <!-- ================= 5. DATA TYPES ================= -->
+  <div class="section-label" id="s5"><span class="num-badge">5</span>Types of Data</div>
+  <div class="grid3">
+    <div class="mini-card" style="color:var(--ink-sup);"><b>Structured</b>Neat rows & columns, fixed schema.<br>Examples: Excel, CSV, MySQL.</div>
+    <div class="mini-card" style="color:var(--ink-uns);"><b>Unstructured</b>No fixed format.<br>Examples: images, videos, PDFs, Word docs — stored in MongoDB, Redis.</div>
+    <div class="mini-card" style="color:var(--ink-semi);"><b>Semi-Structured</b>Some structure, not a full table.<br>Examples: JSON (key–value, APIs), XML (&lt;name&gt;Rahul&lt;/name&gt;).</div>
+  </div>
+
+  <!-- ================= 6. PREPROCESSING ================= -->
+  <div class="section-label" id="s6"><span class="num-badge">6</span>Data Preprocessing</div>
+  <div class="grid3">
+    <div class="mini-card" style="color:var(--ink-teal);"><b>Missing / Null Values</b>Fill them in (mean/median/mode) or remove the row/column.</div>
+    <div class="mini-card" style="color:var(--ink-rl);"><b>Duplicates</b>Find and remove repeated rows so they don't skew training.</div>
+    <div class="mini-card" style="color:var(--ink-mustard);"><b>Outliers</b>Values far outside the normal range — detect (IQR / Z-score) and handle carefully.</div>
+  </div>
+
+  <!-- ================= 7. ENCODING ================= -->
+  <div class="section-label" id="s7"><span class="num-badge">7</span>Encoding (Text → Numbers)</div>
+  <p style="font-size:16px;">Algorithms only understand numbers — encoding turns text into numeric form.</p>
+  <div class="oneline-grid">
+    <div class="oneline o-sup"><b>Label Encoding</b>Gives each category a number. Red=0, Green=1, Blue=2.<br><i style="font-size:13px;">⚠ can wrongly imply order/ranking.</i></div>
+    <div class="oneline o-uns"><b>One-Hot Encoding</b>Separate 0/1 column per category. Red→[1,0,0], Green→[0,1,0], Blue→[0,0,1]. Avoids false ordering.</div>
+  </div>
+
+  <!-- ================= 8. SCALING ================= -->
+  <div class="section-label" id="s8"><span class="num-badge">8</span>Feature Scaling</div>
+  <p style="font-size:16px;">Different columns have different ranges (Age: 0–100 vs Salary: 0–10,00,000). Scaling puts everything on a fair, comparable scale.</p>
+  <div class="oneline-grid">
+    <div class="oneline o-semi"><b>Normalization</b>Squeezes values into a 0 to 1 range.</div>
+    <div class="oneline o-rl"><b>Standardization</b>Rescales so the average becomes 0.</div>
+  </div>
+
+  <!-- ================= 9. KEY TERMS ================= -->
+  <div class="section-label" id="s9"><span class="num-badge">9</span>Key Training Terms</div>
+  <div class="grid3">
+    <div class="mini-card" style="color:var(--ink-sup);"><b>Prediction</b>The answer the model gives for a new input.</div>
+    <div class="mini-card" style="color:var(--ink-uns);"><b>Accuracy</b>How often the model's predictions are correct.</div>
+    <div class="mini-card" style="color:var(--ink-rl);"><b>Loss</b>Gap between real value and predicted value. Loss = Actual − Predicted. Lower is better.</div>
+    <div class="mini-card" style="color:var(--ink-semi);"><b>Epoch</b>One full pass through all training data.<br>e.g. 100 rows, epoch=3 → model sees all 100 rows, 3 times.</div>
+    <div class="mini-card" style="color:var(--ink-teal);"><b>Learning Rate</b>Size of the "step" the model takes while learning.<br>Too high → overshoots. Too low → too slow.</div>
+  </div>
+
+  <!-- ================= 10. REGRESSION VS CLASSIFICATION ================= -->
+  <div class="section-label" id="s10"><span class="num-badge">10</span>Regression vs Classification</div>
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>Regression</th><th>Classification</th></tr>
+      <tr><td><b>Predicts</b></td><td>A number</td><td>A category</td></tr>
+      <tr><td><b>Example</b></td><td>House price, stock price</td><td>Spam/not spam, Pass/Fail</td></tr>
+    </table>
+  </div>
+
+  <div class="section-label" style="margin-top:26px;">Types of Regression</div>
+  <div class="grid3">
+    <div class="mini-card" style="color:var(--ink-sup);"><b>Simple Linear</b>One input → one output, straight line: y = mx + c</div>
+    <div class="mini-card" style="color:var(--ink-uns);"><b>Multiple Linear</b>Many inputs → one output: y = m1x1 + m2x2 + ... + c</div>
+    <div class="mini-card" style="color:var(--ink-semi);"><b>Polynomial</b>Used when data forms a curve, not a straight line.</div>
+  </div>
+  <div class="mini-card" style="color:var(--ink-rl); max-width:420px; margin-top:14px;"><b>Logistic Regression</b>Despite the name, this is actually used for <u>classification</u> — predicts probability of a category (yes/no).</div>
+
+  <div class="formula-box">y = mx + c</div>
+  <p style="font-size:15px; margin-top:-6px;">y = predicted output &nbsp;·&nbsp; x = input &nbsp;·&nbsp; m = slope (learned) &nbsp;·&nbsp; c = intercept (learned)</p>
+
+  <!-- ================= 11. COST FUNCTION / MSE ================= -->
+  <div class="section-label" id="s11"><span class="num-badge">11</span>Cost Function &amp; MSE</div>
+  <div class="sticky">
+    <b>Cost Function (Loss Function)</b>
+    Measures how wrong the model's predictions are overall. High cost = low accuracy. Low cost = high accuracy. Training = adjusting m and c until cost is as low as possible.
+  </div>
+  <div class="formula-box" style="font-size:26px;">MSE = average of (actual − predicted)²</div>
+  <p style="font-size:15px;">Squaring stops positive/negative errors from cancelling out, and punishes big mistakes more.</p>
+
+  <!-- ================= 12. train_test_split ================= -->
+  <div class="section-label" id="s12"><span class="num-badge">12</span>train_test_split &amp; random_state</div>
+  <div class="oneline-grid">
+    <div class="oneline o-teal"><b>train_test_split</b>Splits your dataset into training and testing parts (e.g. 80/20).</div>
+    <div class="oneline o-mustard"><b>random_state</b>A fixed number that controls the shuffle before splitting — same number = same split every time (reproducible results).</div>
+  </div>
+  <div class="code-box"><span class="cmt"># same split every time because random_state is fixed</span><br>
+from sklearn.model_selection import train_test_split<br>
+X_train, X_test, y_train, y_test = train_test_split(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;X, y, test_size=0.2, random_state=42<br>
+)</div>
+
+  <!-- ================= RECAP ================= -->
+  <div class="section-label" id="s13">Quick Recap Map</div>
+  <div class="sticky" style="background:var(--hi-green); transform:rotate(1deg); max-width:100%;">
+    <b>The whole notebook in one breath</b>
+    ML = Data + Algorithm &nbsp;→&nbsp; split into Features + Target &nbsp;→&nbsp; 4 types: Supervised / Unsupervised / Semi-Supervised / Reinforcement &nbsp;→&nbsp; Life Cycle: Problem → Collect → Clean → Feature-Engineer → Split → Select Model → Train → Evaluate → Tune → Deploy → Monitor → Retrain &nbsp;→&nbsp; along the way: encode text, scale numbers, watch loss/epoch/learning rate, minimize the cost function (MSE), and always fix random_state for reproducible splits.
+  </div>
+
+  <div class="footer-note">tap the flip cards anytime, or jump to any section from the top bar</div>
+</div>
+
+<script>
+  const spiral = document.getElementById('spiral');
+  const holeCount = Math.ceil(document.body.scrollHeight / 68) + 2;
+  for(let i=0;i<holeCount;i++){ spiral.appendChild(document.createElement('span')); }
+</script>
+
+</body>
+</html>
