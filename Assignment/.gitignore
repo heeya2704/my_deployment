@@ -1,0 +1,14 @@
+# ML Model Artifacts (Use Git LFS or DVC for large binaries)
+*.pkl
+*.joblib
+models/**/*.pkl
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and OS settings
+.vscode/
+.idea/
+.DS_Store

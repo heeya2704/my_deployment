@@ -1,0 +1,180 @@
+================================================================================
+MACHINE LEARNING DEPLOYMENT & PERSISTENCE ASSIGNMENT
+================================================================================
+
+================================================================================
+PART 1: DEPLOYMENT CONCEPTS & STRATEGIES
+================================================================================
+
+--------------------------------------------------------------------------------
+TASK 1: Difference Between Training and Deployment of an ML Model
+--------------------------------------------------------------------------------
+Training is the offline process where a machine learning algorithm learns patterns, weights, and relationships from historical datasets. In contrast, deployment is the process of taking the trained model and integrating it into a live production environment (e.g., behind a cloud API) so it can process real-world data and serve predictions to live users. For example, in Zomato's food recommendation system, training happens offline on cloud servers where historical order histories, cuisine ratings, and delivery patterns are processed to build a predictive recommendation model. Deployment occurs when this trained model is hosted on production servers; whenever a user opens the Zomato app, the deployed model takes the user's current location and preferences to instantly generate and serve a personalized list of top restaurant recommendations.
+
+
+--------------------------------------------------------------------------------
+TASK 2: Real-World ML Deployment Examples in Popular Apps
+--------------------------------------------------------------------------------
+1. Spam & Fraudulent Message Detection in WhatsApp
+   - User Interaction: As incoming messages arrive, the deployed ML model scans text patterns and metadata in real time. Users automatically see suspicious messages flagged with safety warnings or moved into a spam box without needing to manually filter unsolicited texts.
+
+2. Personalized Playlists (Discover Weekly / Daily Mix) in Spotify
+   - User Interaction: When a user opens Spotify, they interact with custom-generated playlist carousels based on their past listening habits, top genres, and skipped songs. Users simply tap play to enjoy a dynamically updated stream of tracks curated specifically for them.
+
+3. Real-time Transaction Fraud Detection in Paytm / UPI Apps
+   - User Interaction: During money transfers, an ML model evaluates transaction parameters (amount, recipient pattern, device location, time) in milliseconds. If high risk is detected, the app prompts the user with an extra verification step (e.g., OTP/PIN confirmation or transaction hold) to secure their account.
+
+
+--------------------------------------------------------------------------------
+TASK 3: Online vs. Offline Deployment Choice for a BookMyShow-like App
+--------------------------------------------------------------------------------
+I would choose offline (batch) deployment combined with caching for a movie recommendation feature in a BookMyShow-like app. User movie preferences and general movie catalogs do not change second-by-second, so pre-computing recommendations offline (e.g., every few hours or nightly) and storing them in a fast database like Redis allows serving recommendations with near-zero latency to millions of concurrent users. Retraining deep recommendation models on massive user booking logs is computationally expensive and is best scheduled periodically offline rather than run in real-time. This batch deployment approach ensures low infrastructure costs and high system throughput while keeping recommendations sufficiently fresh whenever users open the app.
+
+
+--------------------------------------------------------------------------------
+TASK 4: Batch Prediction Simulation in Python (Basic String Operations)
+--------------------------------------------------------------------------------
+Python Code:
+def batch_predict_sentiment(reviews):
+    predictions = []
+    for review in reviews:
+        if 'good' in review.lower():
+            sentiment = 'positive'
+        else:
+            sentiment = 'negative'
+        predictions.append((review, sentiment))
+    return predictions
+
+Execution Output:
+No.  | Review                                               | Predicted Sentiment
+-----------------------------------------------------------------------------
+1    | The food was really good and fresh.                  | positive
+2    | Worst service ever, totally disappointed.            | negative
+3    | Ambience was nice and staff was very polite.         | negative
+4    | The pizza tasted good, but it was cold.              | positive
+5    | Extremely slow delivery and cold food.               | negative
+6    | A good place to hang out with friends and family.    | positive
+7    | Not worth the price, quality was poor.               | negative
+8    | Desserts were amazingly good!                        | positive
+9    | Average taste, nothing special.                      | negative
+10   | Great presentation and good value for money.         | positive
+
+
+--------------------------------------------------------------------------------
+TASK 5: Deployment Challenge in a Flipkart-like E-commerce App
+--------------------------------------------------------------------------------
+- Challenge: Prediction Latency Spikes and Server Overload During Peak Traffic Events (e.g., Big Billion Days Sale)
+  Description: During mega sale events, traffic surges dramatically with tens of thousands of concurrent user queries per second for personalized product recommendations and search re-ranking. Running real-time inference on complex deep learning models for every user request can overload servers, causing high response latency or API timeouts and leading to cart abandonment.
+
+- Suggested Solution: Optimized Model Serving & Multilevel Caching
+  Optimize inference models using runtime toolkits like ONNX Runtime or TensorRT to reduce prediction latency, combined with caching popular recommendations in Redis for high-frequency queries. Additionally, hosting the inference service on a microservices cluster with Horizontal Pod Autoscaling (HPA) ensures prediction server instances automatically scale up based on CPU/GPU demand during traffic spikes.
+
+
+================================================================================
+PART 2: MODEL PERSISTENCE, VERSIONING & MANAGEMENT
+================================================================================
+
+--------------------------------------------------------------------------------
+TASK 1: Train DecisionTreeClassifier & Save using Pickle (song_genre_model.pkl)
+--------------------------------------------------------------------------------
+Python Code:
+import pickle
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+
+# Dataset: [Tempo (BPM), Energy (0-100), Danceability (0-100)]
+X_songs = np.array([
+    [120, 80, 85], [140, 90, 60], [128, 95, 90], [70, 20, 30],
+    [118, 75, 80], [145, 85, 55], [130, 92, 88], [65, 15, 25]
+])
+y_genres = np.array(['Pop', 'Rock', 'EDM', 'Classical', 'Pop', 'Rock', 'EDM', 'Classical'])
+
+dt_classifier = DecisionTreeClassifier(random_state=42)
+dt_classifier.fit(X_songs, y_genres)
+
+with open('song_genre_model.pkl', 'wb') as f:
+    pickle.dump(dt_classifier, f)
+
+Result: Saved trained model to file 'song_genre_model.pkl'.
+
+
+--------------------------------------------------------------------------------
+TASK 2: Load song_genre_model.pkl & Predict Genre for New Song
+--------------------------------------------------------------------------------
+Python Code:
+with open('song_genre_model.pkl', 'rb') as f:
+    loaded_dt_model = pickle.load(f)
+
+new_song_features = np.array([[126, 94, 91]]) # High tempo, high energy, high danceability
+predicted_genre = loaded_dt_model.predict(new_song_features)[0]
+
+print(f"New Song Input: Tempo=126 BPM, Energy=94, Danceability=91")
+print(f"Predicted Genre: {predicted_genre}")
+
+Result Output:
+New Song Input: Tempo=126 BPM, Energy=94, Danceability=91
+Predicted Genre: EDM
+
+
+--------------------------------------------------------------------------------
+TASK 3: Train KNeighborsClassifier & Save using Joblib (product_category_model.joblib)
+--------------------------------------------------------------------------------
+Python Code:
+import joblib
+from sklearn.neighbors import KNeighborsClassifier
+
+# Dataset: [Weight (g), Price (INR), Battery Included (1/0)]
+X_products = np.array([
+    [500,  25000, 1], [200,   1500, 0], [1200, 45000, 1],
+    [350,   2200, 0], [150,   3500, 1], [400,   1200, 0]
+])
+y_categories = np.array(['electronics', 'fashion', 'electronics', 'fashion', 'electronics', 'fashion'])
+
+knn_classifier = KNeighborsClassifier(n_neighbors=3)
+knn_classifier.fit(X_products, y_categories)
+
+joblib.dump(knn_classifier, 'product_category_model.joblib')
+
+# Load and verify
+loaded_knn = joblib.load('product_category_model.joblib')
+pred_category = loaded_knn.predict([[180, 2900, 1]])[0]
+
+Result: Saved trained model to file 'product_category_model.joblib'.
+Verification Prediction for [180g, Rs 2900, Battery=1]: fashion
+
+
+--------------------------------------------------------------------------------
+TASK 4: Model Versioning Directory Structure & Tracking Strategy
+--------------------------------------------------------------------------------
+Directory Structure:
+models/
+├── v1/
+│   └── zomato_rating_model_v1.pkl
+├── v2/
+│   └── zomato_rating_model_v2.pkl
+└── deployed_version.json
+
+Content of deployed_version.json:
+{
+    "active_version": "v2",
+    "deployed_model_path": "models/v2/zomato_rating_model_v2.pkl",
+    "deployment_timestamp": "2026-09-06T22:38:00Z",
+    "deployed_by": "MLOps_Pipeline"
+}
+
+Version Tracking Explanation:
+To track which model version is active in production, we use a central deployment configuration file (models/deployed_version.json) or environment variable (DEPLOYED_MODEL_VERSION=v2). When the application server starts or receives a reload signal, it reads the active path from the metadata file and loads models/v2/zomato_rating_model_v2.pkl. Alternatively, a symbolic link (symlink models/current -> models/v2) can point directly to the active model directory, enabling zero-downtime hot-swapping without code changes.
+
+
+--------------------------------------------------------------------------------
+TASK 5: Best Practices for Storing & Managing ML Model Files in BookMyShow
+--------------------------------------------------------------------------------
+1. Centralized Cloud Object Storage & Model Registry (e.g., AWS S3 + MLflow)
+   - Why Important: Storing heavy model binaries directly in Git repositories bloats code history. Storing model artifacts in cloud object storage (AWS S3 / GCS) connected to an MLflow Model Registry enables centralized tracking, security, artifact integrity, and seamless distribution to production servers.
+
+2. Strict Semantic Versioning and Lineage Metadata Tracking
+   - Why Important: In an app like BookMyShow where recommendation engines are frequently retrained, linking every model binary to a semantic version (e.g., v2.1.0), Git commit hash, dataset version, and test metrics ensures total auditability. If a newly deployed model yields poor recommendations, developers can immediately roll back to a known stable version.
+
+3. Automated CI/CD Schema Validation and Hot-Swapping
+   - Why Important: Before deploying a model artifact to production servers, automated CI/CD pipelines should run schema verification, latency checks, and test predictions. Combined with dynamic hot-swapping or canary releases, this prevents broken model binaries from causing API crashes or downtime during peak movie booking windows.
+================================================================================

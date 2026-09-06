@@ -1,0 +1,6 @@
+{
+    "active_version": "v2",
+    "deployed_model_path": "models/v2/zomato_rating_model_v2.pkl",
+    "deployment_timestamp": "2026-09-06T22:38:00Z",
+    "deployed_by": "MLOps_Pipeline"
+}
