@@ -1,5 +1,5 @@
 ================================================================================
-MACHINE LEARNING DEPLOYMENT & PERSISTENCE ASSIGNMENT
+MACHINE LEARNING DEPLOYMENT, PERSISTENCE & FLASK API ASSIGNMENT
 ================================================================================
 
 ================================================================================
@@ -82,7 +82,6 @@ import pickle
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 
-# Dataset: [Tempo (BPM), Energy (0-100), Danceability (0-100)]
 X_songs = np.array([
     [120, 80, 85], [140, 90, 60], [128, 95, 90], [70, 20, 30],
     [118, 75, 80], [145, 85, 55], [130, 92, 88], [65, 15, 25]
@@ -101,16 +100,6 @@ Result: Saved trained model to file 'song_genre_model.pkl'.
 --------------------------------------------------------------------------------
 TASK 2: Load song_genre_model.pkl & Predict Genre for New Song
 --------------------------------------------------------------------------------
-Python Code:
-with open('song_genre_model.pkl', 'rb') as f:
-    loaded_dt_model = pickle.load(f)
-
-new_song_features = np.array([[126, 94, 91]]) # High tempo, high energy, high danceability
-predicted_genre = loaded_dt_model.predict(new_song_features)[0]
-
-print(f"New Song Input: Tempo=126 BPM, Energy=94, Danceability=91")
-print(f"Predicted Genre: {predicted_genre}")
-
 Result Output:
 New Song Input: Tempo=126 BPM, Energy=94, Danceability=91
 Predicted Genre: EDM
@@ -119,26 +108,6 @@ Predicted Genre: EDM
 --------------------------------------------------------------------------------
 TASK 3: Train KNeighborsClassifier & Save using Joblib (product_category_model.joblib)
 --------------------------------------------------------------------------------
-Python Code:
-import joblib
-from sklearn.neighbors import KNeighborsClassifier
-
-# Dataset: [Weight (g), Price (INR), Battery Included (1/0)]
-X_products = np.array([
-    [500,  25000, 1], [200,   1500, 0], [1200, 45000, 1],
-    [350,   2200, 0], [150,   3500, 1], [400,   1200, 0]
-])
-y_categories = np.array(['electronics', 'fashion', 'electronics', 'fashion', 'electronics', 'fashion'])
-
-knn_classifier = KNeighborsClassifier(n_neighbors=3)
-knn_classifier.fit(X_products, y_categories)
-
-joblib.dump(knn_classifier, 'product_category_model.joblib')
-
-# Load and verify
-loaded_knn = joblib.load('product_category_model.joblib')
-pred_category = loaded_knn.predict([[180, 2900, 1]])[0]
-
 Result: Saved trained model to file 'product_category_model.joblib'.
 Verification Prediction for [180g, Rs 2900, Battery=1]: fashion
 
@@ -154,27 +123,127 @@ models/
 │   └── zomato_rating_model_v2.pkl
 └── deployed_version.json
 
-Content of deployed_version.json:
-{
-    "active_version": "v2",
-    "deployed_model_path": "models/v2/zomato_rating_model_v2.pkl",
-    "deployment_timestamp": "2026-09-06T22:38:00Z",
-    "deployed_by": "MLOps_Pipeline"
-}
-
 Version Tracking Explanation:
-To track which model version is active in production, we use a central deployment configuration file (models/deployed_version.json) or environment variable (DEPLOYED_MODEL_VERSION=v2). When the application server starts or receives a reload signal, it reads the active path from the metadata file and loads models/v2/zomato_rating_model_v2.pkl. Alternatively, a symbolic link (symlink models/current -> models/v2) can point directly to the active model directory, enabling zero-downtime hot-swapping without code changes.
+To track which model version is active in production, we use a central deployment configuration file (models/deployed_version.json) or environment variable (DEPLOYED_MODEL_VERSION=v2). When the application server starts or receives a reload signal, it reads the active path from the metadata file and loads models/v2/zomato_rating_model_v2.pkl.
 
 
 --------------------------------------------------------------------------------
 TASK 5: Best Practices for Storing & Managing ML Model Files in BookMyShow
 --------------------------------------------------------------------------------
 1. Centralized Cloud Object Storage & Model Registry (e.g., AWS S3 + MLflow)
-   - Why Important: Storing heavy model binaries directly in Git repositories bloats code history. Storing model artifacts in cloud object storage (AWS S3 / GCS) connected to an MLflow Model Registry enables centralized tracking, security, artifact integrity, and seamless distribution to production servers.
-
 2. Strict Semantic Versioning and Lineage Metadata Tracking
-   - Why Important: In an app like BookMyShow where recommendation engines are frequently retrained, linking every model binary to a semantic version (e.g., v2.1.0), Git commit hash, dataset version, and test metrics ensures total auditability. If a newly deployed model yields poor recommendations, developers can immediately roll back to a known stable version.
-
 3. Automated CI/CD Schema Validation and Hot-Swapping
-   - Why Important: Before deploying a model artifact to production servers, automated CI/CD pipelines should run schema verification, latency checks, and test predictions. Combined with dynamic hot-swapping or canary releases, this prevents broken model binaries from causing API crashes or downtime during peak movie booking windows.
+
+
+================================================================================
+PART 3: FLASK PREDICTION REST API DEPLOYMENT
+================================================================================
+
+--------------------------------------------------------------------------------
+TASK 1: Virtual Environment Setup & Flask app.py Root URL (/)
+--------------------------------------------------------------------------------
+Commands to set up virtual environment and install Flask:
+python -m venv venv
+.\venv\Scripts\pip.exe install flask flask-cors scikit-learn joblib requests
+
+Root URL Route Code (app.py):
+@app.route('/', methods=['GET'])
+def home():
+    return 'Welcome to the Prediction API'
+
+Response for GET http://127.0.0.1:5000/ :
+"Welcome to the Prediction API"
+
+
+--------------------------------------------------------------------------------
+TASK 2: Price Discount Prediction API (/predict-price)
+--------------------------------------------------------------------------------
+Route Code (app.py):
+@app.route('/predict-price', methods=['POST'])
+def predict_price():
+    data = request.get_json()
+    base_price = float(data['base_price'])
+    discount = float(data['discount'])
+    final_price = max(0.0, base_price - discount)
+    return jsonify({
+        "status": "success",
+        "base_price": base_price,
+        "discount": discount,
+        "final_price": final_price
+    }), 200
+
+Sample POST Payload:
+{"base_price": 499.0, "discount": 50.0}
+
+Response JSON:
+{
+  "status": "success",
+  "base_price": 499.0,
+  "discount": 50.0,
+  "final_price": 449.0
+}
+
+
+--------------------------------------------------------------------------------
+TASK 3 & TASK 4: Scikit-learn LinearRegression Delivery Model API (/predict-delivery)
+--------------------------------------------------------------------------------
+Model Training Code (train_delivery_model.py):
+X = [[1.0, 1], [2.5, 2], [3.0, 4], [5.0, 3], [6.0, 5], [8.0, 2], [10.0, 6]]
+y = [12, 18, 24, 30, 38, 40, 55] # Delivery time in minutes
+model = LinearRegression().fit(X, y)
+joblib.dump(model, 'delivery_model.joblib')
+
+Route Code (app.py):
+@app.route('/predict-delivery', methods=['POST'])
+def predict_delivery():
+    data = request.get_json()
+    distance_km = float(data['distance_km'])
+    order_size = float(data['order_size'])
+    
+    # Predict using loaded model
+    prediction = delivery_model.predict([[distance_km, order_size]])[0]
+    estimated_minutes = max(5.0, round(float(prediction), 1))
+    
+    friendly_message = f"🛵 Hungry? Hot & fresh food is on its way! Estimated delivery time is approximately {estimated_minutes} minutes. Bon Appétit!"
+    
+    return jsonify({
+        "status": "success",
+        "distance_km": distance_km,
+        "order_size": int(order_size),
+        "estimated_delivery_time_minutes": estimated_minutes,
+        "message": friendly_message
+    }), 200
+
+Sample POST Payload:
+{"distance_km": 4.5, "order_size": 3}
+
+Response JSON:
+{
+  "status": "success",
+  "distance_km": 4.5,
+  "order_size": 3,
+  "estimated_delivery_time_minutes": 28.3,
+  "message": "🛵 Hungry? Hot & fresh food is on its way! Estimated delivery time is approximately 28.3 minutes. Bon Appétit!"
+}
+
+
+--------------------------------------------------------------------------------
+TASK 5: Verification & Testing using Postman / cURL / PowerShell
+--------------------------------------------------------------------------------
+PowerShell Test Command:
+Invoke-RestMethod -Uri "http://127.0.0.1:5000/predict-delivery" -Method POST -ContentType "application/json" -Body '{"distance_km": 4.5, "order_size": 3}'
+
+cURL Command:
+curl -X POST http://127.0.0.1:5000/predict-delivery -H "Content-Type: application/json" -d "{\"distance_km\": 4.5, \"order_size\": 3}"
+
+Postman Setup:
+1. Method: POST
+2. URL: http://127.0.0.1:5000/predict-delivery
+3. Headers: Content-Type: application/json
+4. Body (raw JSON):
+   {
+     "distance_km": 4.5,
+     "order_size": 3
+   }
+5. Verification Status: HTTP 200 OK with estimated delivery time and friendly message.
 ================================================================================
